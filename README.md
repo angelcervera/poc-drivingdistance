@@ -15,10 +15,14 @@ tag [oneway](https://wiki.openstreetmap.org/wiki/Key:oneway) is present. Dependi
 - If the value is "no" or the tag is not present, it is a bidirectional way.
 
 ## Info:
+- [osm4scala](https://github.com/angelcervera/osm4scala)
 - [oneway tag](https://wiki.openstreetmap.org/wiki/Key:oneway)
 - [Forward & backward, left & right](https://wiki.openstreetmap.org/wiki/Forward_%26_backward,_left_%26_right)
 - [Identify direction in the editor](https://wiki.openstreetmap.org/wiki/Forward_%26_backward,_left_%26_right#Identifying_the_direction_of_a_.27way.27)
-
+- [JAI](https://github.com/geosolutions-it/jai-ext)
+- [GDAL](http://gdal.org/)
+- [GeoTools](http://geotools.org/)
+- [Temnur's isolines](https://bitbucket.org/temnur/isoline/wiki/Home)
 
 
 
