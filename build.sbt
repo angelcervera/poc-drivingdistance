@@ -28,17 +28,6 @@ lazy val drivingdistance = Project(id = "drivingdistance", base = file("drivingd
     )
   )
 
-lazy val blocksextraction = Project(id = "blocksextraction", base = file("blocksextraction")).
-  settings(
-    commonSettings,
-    name := "blockextraction",
-    description := "Extract all blocks from an osmfile",
-    libraryDependencies ++= Seq(
-      "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
-      "com.github.scopt" %% "scopt" % "3.5.0"
-    )
-  )
-
 lazy val loader = Project(id = "loader", base = file("loader")).
   settings(
     commonSettings,
