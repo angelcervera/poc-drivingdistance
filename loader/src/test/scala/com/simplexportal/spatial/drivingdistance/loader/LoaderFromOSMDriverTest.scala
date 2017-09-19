@@ -25,8 +25,25 @@
 
 package com.simplexportal.spatial.drivingdistance.loader
 
+import org.apache.spark.SparkConf
 import org.scalatest.{GivenWhenThen, WordSpec}
 
-class LoaderDriverTest extends WordSpec with GivenWhenThen {
+class LoaderFromOSMDriverTest extends WordSpec with GivenWhenThen {
+
+  "LoaderFromOSMDriver" should {
+    "extract all ways with coords" in {
+
+      Given("a set of 23 blob files")
+      val input = "assets/osm/faroe-islands"
+      val output = s"/tmp/poc-drivingdistance/${System.currentTimeMillis()}"
+
+      When("")
+      val defaultConfig = new SparkConf().setMaster("local[4]")
+      LoaderFromOSMDriver.load(defaultConfig, input, output)
+
+      Then("")
+
+    }
+  }
 
 }

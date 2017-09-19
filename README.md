@@ -24,9 +24,15 @@ tag [oneway](https://wiki.openstreetmap.org/wiki/Key:oneway) is present. Dependi
 - [GeoTools](http://geotools.org/)
 - [Temnur's isolines](https://bitbucket.org/temnur/isoline/wiki/Home)
 
+## Metrics.
+### Time transferring all blocks of the full planet
+```bash
+~/apps/hadoop-2.7.4$ time bin/hdfs dfs -put /tmp/blocks osm/planet
 
-
-
+real	78m50.689s
+user	3m17.480s
+sys	2m9.436s
+```
 
 ## Next steps approachs:
 - Store one street per Actor, instead a node, so we save a lot of calls between nodes and it is necessary only check if we passed before by the street and not be the node.
