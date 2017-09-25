@@ -29,7 +29,7 @@ tag [oneway](https://wiki.openstreetmap.org/wiki/Key:oneway) is present. Dependi
 ```bash
 ~/apps/hadoop-2.7.4$ time bin/hdfs dfs -put /tmp/blocks osm/planet
 
-real	78m50.689s
+real	41m50.689s
 user	3m17.480s
 sys	2m9.436s
 ```
