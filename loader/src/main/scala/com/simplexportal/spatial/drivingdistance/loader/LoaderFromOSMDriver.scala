@@ -27,22 +27,17 @@ package com.simplexportal.spatial.drivingdistance.loader
 
 import com.acervera.osm4scala.EntityIterator
 import com.acervera.osm4scala.model.{NodeEntity, OSMEntity, OSMTypes, WayEntity}
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
+import com.simplexportal.spatial.drivingdistance.model.{Location, Node, Way}
+import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
 import org.openstreetmap.osmosis.osmbinary.fileformat.Blob
-import org.apache.log4j.LogManager
+import org.apache.log4j.Logger
+import org.apache.spark.rdd.RDD
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.LongAccumulator
 
 object LoaderFromOSMDriver {
 
-  val log = LogManager.getRootLogger
-
-  // Node useful information: (nodeId,  (Latitude, Longitude))
-  type NodeInfo = (Long, (Double, Double))
-
-  // Way useful information: (nodeId, (wayId, position))
-  type WayInfo = (Long, (Long, Int))
-
+  val log = Logger.getLogger("com.simplexportal.spatial.drivingdistance.loader.LoaderFromOSMDriver")
 
   /**
     * Transform the file into a sequence of OSM entities.
@@ -64,34 +59,92 @@ object LoaderFromOSMDriver {
     }
   }
 
-  def extractUsefulDataFromNode(node: NodeEntity): NodeInfo = (node.id, (node.latitude, node.longitude))
-
-  def extractUsefulDataFromWay(way: WayEntity): Seq[WayInfo] = way.nodes.zipWithIndex.map{case(nodeId, idx) => (nodeId, (way.id, idx))}
-
   /**
-    * Generate useful information from an entity.
-    * The result is going to be way smaller, so we can cache the result.
+    * Extract all nodes information from osmNode entities.
     *
     * @param osmEntity
     * @return
     */
-  def extractUsefulData(osmEntity: OSMEntity): Seq[Either[NodeInfo, WayInfo]] = osmEntity.osmModel match {
-    case OSMTypes.Node => Seq(Left(extractUsefulDataFromNode(osmEntity.asInstanceOf[NodeEntity])))
-    case OSMTypes.Way => extractUsefulDataFromWay(osmEntity.asInstanceOf[WayEntity]).map(Right(_))
-    case _ => Seq.empty
-  }
-
-  def filterNodeData(usedEntity: Either[NodeInfo, WayInfo]): Option[NodeInfo] = usedEntity match {
-    case Left(nodeInfo) => Some(nodeInfo)
+  def extractNodes(osmEntity: OSMEntity): Option[(Long, Node)] = osmEntity.osmModel match {
+    case OSMTypes.Node => {
+      val node = osmEntity.asInstanceOf[NodeEntity]
+      Some((node.id, Node(node.id, Location(node.latitude, node.longitude), node.tags)))
+    }
     case _ => None
   }
 
-  def filterWayData(usedEntity: Either[NodeInfo, WayInfo]): Option[WayInfo] = usedEntity match {
-    case Right(wayInfo) => Some(wayInfo)
+  /**
+    * Extract pairs of nodesId and wayId.
+    *
+    * @param osmEntity
+    * @return Pair with the (nodeId, (wayId, node position))
+    */
+  def extractWayNodes(osmEntity: OSMEntity): Seq[(Long, (Long, Int))] = extractWay(osmEntity) match {
+    case None => Seq()
+    case Some(way) => way.nodes.zipWithIndex.map { case(nodeId, idx) => (nodeId, (way.id, idx))}
+  }
+
+  def extractWay(osmEntity: OSMEntity): Option[WayEntity] = osmEntity.osmModel match {
+    case OSMTypes.Way => Some(osmEntity.asInstanceOf[WayEntity])
     case _ => None
   }
 
-  def generateWay(wayId: Long, coords: Seq[((Double, Double), Int, Long)]): (Long, Seq[(Double, Double)]) = (wayId, coords.sortBy(_._2).map{_._1} )
+  /**
+    * From a list of non orders pais of Nodes and position, generate the list of ordered Nodes.
+    *
+    * @param coords
+    * @return
+    */
+  def generateWayNodeSeq(coords: Seq[(Node, Int)]): Seq[Node] = coords.sortBy(_._2).map{_._1}
+
+
+  /**
+    * Per every wayId, create a ordered list of Nodes that form the way.
+    *
+    * @param nodeIdsFromWay Set of (nodeIdx, (wayId, position)) that for the list of nodes per way.
+    * @param nodes Set of (nodeId, Node) that represent the data set of nodes.
+    * @return Set of (wayId, Seq[Node]) that represent the ordered set of nodes that form the way.
+    */
+  def calculateOrederedNodesPerWay(nodeIdsFromWay: RDD[(Long, (Long, Int))], nodes: RDD[(Long, Node)]) =
+    nodeIdsFromWay.join(nodes)
+      .map { case (nodeId, ((wayId, position), node)) => (wayId, (node, position)) }
+      .aggregateByKey(Seq[(Node, Int)]())(
+        (prev: Seq[(Node, Int)], node: (Node, Int)) => prev :+ node,
+        (a: Seq[(Node, Int)], b: Seq[(Node, Int)]) => (a ++ b).sortBy(_._2)
+      )
+      .map { case (wayId, nodes) => (wayId, nodes.map(_._1)) }
+
+
+  /**
+    * Create all combinations of paths using this node.
+    *
+    * @param nodeId
+    * @param ways
+    * @return
+    */
+  def spreadWays(nodeId: Long, ways: Seq[Long] ): Seq[(Long, (Long, Seq[Long]))] = ways.map(sourceWayId => (sourceWayId, (nodeId, ways.filter(_ != sourceWayId))))
+
+  /**
+    *
+    * @param nodeIdsFromWay
+    * @return (wayId, Seq[NodeId, Seq[WayID] ])
+    */
+  def calculateIntersectionNodesPerWay(nodeIdsFromWay: RDD[(Long, (Long, Int))]): RDD[ (Long, Seq[(Long, Seq[Long])]) ] =
+    nodeIdsFromWay
+      .map{case( (nodeId, (wayId, _)) ) => (nodeId, Seq(wayId))}
+      .reduceByKey( (a:Seq[Long],b:Seq[Long])=>a++b )
+      .filter(_._2.size>1) // In this point, we have only intersections in the form (nodeId, Seq[wayId])
+      .flatMap{ case(nodeId, ways) => spreadWays(nodeId, ways) } // Data set of (wayId, (nodeId, Seq[wayId]))
+      .aggregateByKey(Seq[(Long, Seq[Long])]())(
+        (prev:Seq[(Long, Seq[Long])], nodeWaysRelation: (Long, Seq[Long])) => prev :+ nodeWaysRelation,
+        (a:Seq[(Long, Seq[Long])], b: Seq[(Long, Seq[Long])] ) => a ++ b
+      )
+
+
+  def buildIntersections(intersOpt: Option[Seq[(Long, Seq[Long])]]): Map[Long, Seq[Long]] = intersOpt match {
+    case None => Map()
+    case Some(intersections) => intersections.toMap
+  }
 
   def load(defaulConfig: SparkConf, input:String, output:String ): Unit = {
 
@@ -101,24 +154,44 @@ object LoaderFromOSMDriver {
     val sc = new SparkContext(conf)
     val errorCounter = sc.longAccumulator
 
-    var usefulData = sc.binaryFiles(input)
+    val osmEntities = sc.binaryFiles(input)
       .flatMap { case (path, binaryBlob) => parseBlob(path, binaryBlob.toArray(), errorCounter) }
-      .flatMap(extractUsefulData)
-      .cache()
+      .persist(StorageLevel.DISK_ONLY)
 
-    val nodesInfo = usefulData.flatMap(filterNodeData)
-    val waysInfo = usefulData.flatMap(filterWayData)
+    // (nodeId, (wayId, pos))
+    val nodeIdsFromWay: RDD[(Long, (Long, Int))] = osmEntities.flatMap(extractWayNodes).persist()
 
-    usefulData.unpersist()
+    val nodes: RDD[(Long, Node)] = osmEntities.flatMap(extractNodes) // (nodeId, node)
 
-    waysInfo.join(nodesInfo)
-      .map{case (nodeId, ((wayId,pos), coords)) => (wayId, (coords, pos, nodeId))}
-      .groupByKey()
-      .map{case ( (wayId, coords) ) => generateWay(wayId, coords.toSeq)}
-      .saveAsTextFile(output)
+    // USe the same partitioner to put all data related with the same way in the same node.
+    val partitionByWayId = new HashPartitioner(100)
+
+    // Create a list ordered nodes that form the way line, to fill nodes and bbox.
+    val nodesPerWay = calculateOrederedNodesPerWay(nodeIdsFromWay, nodes).partitionBy(partitionByWayId)
+
+    // Create a list with all possible paths from the every intersection in the way.
+    val intersectionPerWay = calculateIntersectionNodesPerWay(nodeIdsFromWay).partitionBy(partitionByWayId)
+
+    // Extract direct info from OsmEntity that we are going to use with no manipulation.
+    val waysInfo = osmEntities.flatMap(extractWay).map(way=>(way.id, way.tags)).partitionBy(partitionByWayId)
+
+    // join intersections and nodes to be able to complete way information in the next join.
+    val ways = waysInfo
+      .join(nodesPerWay.fullOuterJoin(intersectionPerWay))
+      .map{ case ( (wayId, (tags, (nodes, intersections))) ) => Way(
+        id = wayId,
+        nodes = nodes.getOrElse(Seq()),
+        tags = tags,
+        intersections = buildIntersections(intersections)
+      )}
+
+    // At the moment, store to be check that it's ok
+    ways.saveAsTextFile(output)
 
     sc.stop()
+
   }
+
 
 
   def main(args: Array[String]): Unit = {

@@ -16,9 +16,21 @@ lazy val commonSettings = Seq(
   resolvers += "osm4scala repo" at "http://dl.bintray.com/angelcervera/maven"
 )
 
-lazy val drivingdistance = Project(id = "drivingdistance", base = file("drivingdistance")).
+// SBT BUG: https://github.com/sbt/sbt/issues/1448 / https://stackoverflow.com/questions/27929272/how-to-have-sbt-subproject-with-multiple-scala-versions
+lazy val model = Project( id="model", base = file("model")).
+  settings(commonSettings: _*).
   settings(
-    commonSettings,
+    name := "model",
+    crossScalaVersions := Seq("2.12.3", "2.11.11"),
+    description := "Model that represent the network"
+  ).cross
+
+lazy val model_2_11 = model("2.11.11")
+lazy val model_2_12 = model("2.12.3")
+
+lazy val drivingdistance = Project(id = "drivingdistance", base = file("drivingdistance")).
+  settings(commonSettings: _*).
+  settings(
     name := "drivingdistance",
     description := "Driving distance",
     libraryDependencies ++= Seq(
@@ -26,12 +38,12 @@ lazy val drivingdistance = Project(id = "drivingdistance", base = file("drivingd
       "com.typesafe.akka" %% "akka-actor" % "2.5.3",
       "com.typesafe.akka" %% "akka-testkit" % "2.5.3"
     )
-  )
+  ).dependsOn(model_2_12)
 
 lazy val loader = Project(id = "loader", base = file("loader")).
+  settings(commonSettings: _*).
   settings(
-    commonSettings,
-    scalaVersion := "2.11.8",
+    scalaVersion := "2.11.11",
     name := "loader",
     description := "Read osm blocks an generate the network.",
     libraryDependencies ++= Seq(
@@ -39,4 +51,4 @@ lazy val loader = Project(id = "loader", base = file("loader")).
       "org.apache.spark" %% "spark-core" % "2.2.0" % "provided",
       "com.github.scopt" %% "scopt" % "3.5.0"
     )
-  )
+  ).dependsOn(model_2_11)
