@@ -196,15 +196,12 @@ object LoaderFromOSMDriver {
 
     }
 
-
-
   }
 
 
 
   def main(args: Array[String]): Unit = {
-
-
+    // TODO: Implement after implement the AKKA interfaces
   }
 
 }
