@@ -26,7 +26,7 @@
 package com.simplexportal.spatial.drivingdistance.loader
 
 import com.simplexportal.spatial.drivingdistance.model.{Location, Node, Way}
-import org.apache.spark.SparkConf
+import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{GivenWhenThen, WordSpec}
 
 class LoaderFromOSMDriverTest extends WordSpec with GivenWhenThen {
@@ -51,32 +51,44 @@ class LoaderFromOSMDriverTest extends WordSpec with GivenWhenThen {
       assert(spreaded.toSet == expected)
     }
 
-    "extract all ways with coords" in {
+    "generate the network" in {
 
       Given("a set of 23 blob files")
+      val conf = new SparkConf().setMaster("local[4]").setAppName("PocDrivingDistance Loader")
+      conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      val sc = new SparkContext(conf)
       val input = "assets/osm/faroe-islands"
-      val output = s"/tmp/poc-drivingdistance/${System.currentTimeMillis()}/loader"
 
-      When("")
-      val defaultConfig = new SparkConf().setMaster("local[4]")
-      LoaderFromOSMDriver.load(defaultConfig, input, output)
+      When("generate the Network")
+      try {
+        val network = LoaderFromOSMDriver.generateNetwork(sc, input).collect()
 
-      // TODO: Implement manual test.
-      Then("the result must contain 13308 lines")
+        Then("the result must contain 13308 lines")
+        assert(network.size == 13303)
 
-      And("each way must be unique")
+        And("each way must be unique")
+        assert(network.groupBy(_.id).forall(_._2.size == 1))
 
-      And("for wayId ")
+        And("for wayId ")
+        network.find(_.id == 44187800L) match {
+          case(None) => fail("44187800L not found")
+          case(Some(way)) => {
+            val expected = Way(
+              44187800L,
+              Seq(
+                Node(561268530L,Location(61.842537299999954,-6.808299299999992),Map()),
+                Node(561268518L,Location(61.84233149999995,-6.809169099999992),Map())
+              ),
+              Map("name" -> "Í Trøðum", "highway" -> "service", "service" -> "driveway"),
+              Map(561268518L -> Seq(497911997L))
+            )
+            assert(way == expected)
+          }
+        }
+      } finally {
+        sc.stop()
+      }
 
-      val expected = Way(
-        44187800L,
-        Seq(
-          Node(561268530L,Location(61.842537299999954,-6.808299299999992),Map()),
-          Node(561268518L,Location(61.84233149999995,-6.809169099999992),Map())
-        ),
-        Map("name" -> "Í Trøðum", "highway" -> "service", "service" -> "driveway"),
-        Map(561268518L -> Seq(497911997L))
-      )
 
     }
   }

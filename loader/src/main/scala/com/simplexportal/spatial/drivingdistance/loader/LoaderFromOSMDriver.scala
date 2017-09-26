@@ -146,12 +146,8 @@ object LoaderFromOSMDriver {
     case Some(intersections) => intersections.toMap
   }
 
-  def load(defaulConfig: SparkConf, input:String, output:String ): Unit = {
+  def generateNetwork(sc: SparkContext, input:String): RDD[Way] = {
 
-    val conf = defaulConfig.setAppName("PocDrivingDistance Loader")
-    conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-
-    val sc = new SparkContext(conf)
     val errorCounter = sc.longAccumulator
 
     val osmEntities = sc.binaryFiles(input)
@@ -176,7 +172,7 @@ object LoaderFromOSMDriver {
     val waysInfo = osmEntities.flatMap(extractWay).map(way=>(way.id, way.tags)).partitionBy(partitionByWayId)
 
     // join intersections and nodes to be able to complete way information in the next join.
-    val ways = waysInfo
+    waysInfo
       .join(nodesPerWay.fullOuterJoin(intersectionPerWay))
       .map{ case ( (wayId, (tags, (nodes, intersections))) ) => Way(
         id = wayId,
@@ -184,11 +180,23 @@ object LoaderFromOSMDriver {
         tags = tags,
         intersections = buildIntersections(intersections)
       )}
+  }
 
-    // At the moment, store to be check that it's ok
-    ways.saveAsTextFile(output)
+  def load(defaulConfig: SparkConf, input:String, output:String ) = {
 
-    sc.stop()
+    val conf = defaulConfig.setAppName("PocDrivingDistance Loader")
+    conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+
+    val sc = new SparkContext(conf)
+    try {
+      // At the moment, store to be check that it's ok
+      generateNetwork(sc, output).saveAsTextFile(output)
+    } finally {
+      sc.stop()
+
+    }
+
+
 
   }
 
