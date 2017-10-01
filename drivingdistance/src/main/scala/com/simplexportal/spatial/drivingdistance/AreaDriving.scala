@@ -26,7 +26,7 @@
 package com.simplexportal.spatial.drivingdistance
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import com.simplexportal.spatial.GraphNode.GetNextDriving
+import GraphNode.GetNextDriving
 
 import scala.collection.mutable
 

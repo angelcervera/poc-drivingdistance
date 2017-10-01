@@ -23,10 +23,54 @@
  *
  */
 
-package com.simplexportal.spatial.drivingdistance.loader
+package com.simplexportal.spatial
 
-object AppConfig {
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import com.simplexportal.spatial.model.Way
+
+/**
+  * Factory for [[com.simplexportal.spatial.WayStorage]] and container for definition of
+  * all messages that it accepts.
+  */
+object WayStorage {
+  def props(way:Way): Props = Props(new WayStorage(way))
+
+//  /**
+//    * Calculate the coverage in this way and spread the calculus.
+//    */
+//  case class CoverageStep(wayId: Long, nodeId: Long, weight: Long, maxWeight: Long)
+
+  /**
+    * Message to update the value of the way stored.
+    *
+    * @param way
+    */
+  case class Update(way: Way)
+
+  case class Get(to:ActorRef)
 
 }
 
-case class AppConfig(input: String)
+/**
+  * Store a way and implement parts of algorithms related with the way.
+  *
+  * @param way Way to store.
+  */
+class WayStorage(var way: Way) extends Actor with ActorLogging {
+
+  import WayStorage._
+
+  log.debug("Storing way [{}]", way.id)
+
+  override def receive = {
+    case Update(newWay) => {
+      log.debug("Updating way [{}]", way.id)
+      way = newWay
+    }
+    case Get(to) => {
+      log.debug("Sending way to [{}]", to)
+      to ! way
+    }
+  }
+
+}

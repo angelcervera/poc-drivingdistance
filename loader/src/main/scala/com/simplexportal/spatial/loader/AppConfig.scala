@@ -23,12 +23,10 @@
  *
  */
 
-package com.simplexportal.spatial.drivingdistance
+package com.simplexportal.spatial.loader
 
-import akka.actor.ActorSystem
-
-class AreaInfluenceStart extends App {
-
-  val system: ActorSystem = ActorSystem("Driving Distance Algorithm")
+object AppConfig {
 
 }
+
+case class AppConfig(input: String)

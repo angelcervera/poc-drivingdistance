@@ -23,9 +23,9 @@
  *
  */
 
-package com.simplexportal.spatial.drivingdistance.loader
+package com.simplexportal.spatial.loader
 
-import com.simplexportal.spatial.drivingdistance.model.{Location, Node, Way}
+import com.simplexportal.spatial.model.{Location, Node, Way}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{GivenWhenThen, WordSpec}
 

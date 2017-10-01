@@ -23,11 +23,11 @@
  *
  */
 
-package com.simplexportal.spatial.drivingdistance.loader
+package com.simplexportal.spatial.loader
 
 import com.acervera.osm4scala.EntityIterator
 import com.acervera.osm4scala.model.{NodeEntity, OSMEntity, OSMTypes, WayEntity}
-import com.simplexportal.spatial.drivingdistance.model.{Location, Node, Way}
+import com.simplexportal.spatial.model.{Location, Node, Way}
 import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
 import org.openstreetmap.osmosis.osmbinary.fileformat.Blob
 import org.apache.log4j.Logger
@@ -37,7 +37,7 @@ import org.apache.spark.util.LongAccumulator
 
 object LoaderFromOSMDriver {
 
-  val log = Logger.getLogger("com.simplexportal.spatial.drivingdistance.loader.LoaderFromOSMDriver")
+  val log = Logger.getLogger("com.simplexportal.spatial.loader.LoaderFromOSMDriver")
 
   /**
     * Transform the file into a sequence of OSM entities.

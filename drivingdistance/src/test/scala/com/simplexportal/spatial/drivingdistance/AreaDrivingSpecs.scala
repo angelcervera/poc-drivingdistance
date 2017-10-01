@@ -28,7 +28,7 @@ package com.simplexportal.spatial.drivingdistance
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.simplexportal.spatial.drivingdistance.AreaDriving.Calculate
-import com.simplexportal.spatial.{GraphNode, Location, Vertex, Weights}
+import com.simplexportal.spatial.drivingdistance.Weights
 
 import scala.concurrent.duration._
 import akka.testkit.TestProbe
@@ -44,7 +44,7 @@ class AreaDrivingSpecs(_system: ActorSystem) extends AreaDrivingTestKit(_system)
   implicit val timeout = Timeout(30 second)
 
   def newGraphNode(idx:Long, edges: Seq[(ActorRef, Weights)]): ActorRef =
-    system.actorOf(GraphNode.props(Vertex(idx, Location(idx.toFloat, idx.toFloat)), edges), idx.toString)
+    system.actorOf(GraphNode.props(Vertex(idx, LocationXX(idx.toFloat, idx.toFloat)), edges), idx.toString)
 
   def linealGraph(nodes:Int) =
     (0 to (nodes -1)).reverse.foldLeft(newGraphNode(nodes, Seq()))((prev,idx)=>newGraphNode(idx, Seq( (prev, Weights(Some(1),Some(1))) )))

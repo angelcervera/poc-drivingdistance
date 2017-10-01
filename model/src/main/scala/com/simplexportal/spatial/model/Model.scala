@@ -1,4 +1,4 @@
-package com.simplexportal.spatial.drivingdistance.model
+package com.simplexportal.spatial.model
 
 // TODO: Store point as offsets to save space.
 // TODO: Extract all tags a create a Lookup to save space.

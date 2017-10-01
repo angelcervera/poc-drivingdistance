@@ -23,17 +23,19 @@
  *
  */
 
-package com.simplexportal.spatial
+package com.simplexportal.spatial.drivingdistance
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 
-case class Vertex(id: Long, location: Location)
-case class Location(lon: Float, lat: Float)
+case class Vertex(id: Long, location: LocationXX)
+case class LocationXX(lon: Float, lat: Float)
 case class Weights(walking: Option[Long], driving: Option[Long])
 
 object GraphNode {
 
   def props(vertex:Vertex, edges: Seq[(ActorRef, Weights)]): Props = Props(new GraphNode(vertex, edges))
+
+  // Messages
 
   /**
     * Calculate next routes possible and how expensive they are.
