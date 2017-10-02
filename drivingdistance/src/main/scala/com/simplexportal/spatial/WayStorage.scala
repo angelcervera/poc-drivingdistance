@@ -26,6 +26,7 @@
 package com.simplexportal.spatial
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import com.simplexportal.spatial.Coverage.Step
 import com.simplexportal.spatial.model.Way
 
 /**
@@ -34,11 +35,6 @@ import com.simplexportal.spatial.model.Way
   */
 object WayStorage {
   def props(way:Way): Props = Props(new WayStorage(way))
-
-//  /**
-//    * Calculate the coverage in this way and spread the calculus.
-//    */
-//  case class CoverageStep(wayId: Long, nodeId: Long, weight: Long, maxWeight: Long)
 
   /**
     * Message to update the value of the way stored.
@@ -56,7 +52,8 @@ object WayStorage {
   *
   * @param way Way to store.
   */
-class WayStorage(var way: Way) extends Actor with ActorLogging {
+class WayStorage(var way: Way) extends Actor with ActorLogging
+  with CoverageWayStorage {
 
   import WayStorage._
 
@@ -70,6 +67,13 @@ class WayStorage(var way: Way) extends Actor with ActorLogging {
     case Get(to) => {
       log.debug("Sending way to [{}]", to)
       to ! way
+    }
+    case Step(processId, nodeId, weight, maxWeight) => {
+      log.debug(
+        "Starting process [{}] coverage in the way,node [{},{}] with the current weight [{}] and a maximum weight of [{}]",
+        Array(processId, way.id, nodeId, weight, maxWeight)
+      )
+      coverage(processId, nodeId, weight, maxWeight)
     }
   }
 

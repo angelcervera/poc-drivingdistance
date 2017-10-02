@@ -33,8 +33,8 @@ import com.simplexportal.spatial.model._
 /**
   * Actor that manages the contentment of the database.
   */
-object ShardManagerActor {
-  def props: Props = Props(classOf[ShardManagerActor])
+object ShardManager {
+  def props: Props = Props(classOf[ShardManager])
 
   /**
     * Message used to add a new Way to the shard
@@ -66,17 +66,11 @@ object ShardManagerActor {
     */
   case class Metrics(size:Long)
 
-  /**
-    * Message used to calculate the coverage or Driving Distance from one point in a street.
-    *
-    * @param wayId
-    * @param nodeId
-    */
-  case class Coverage(wayId: Long, nodeId:Long) // TODO: Coverage from a spatial location
 }
 
-class ShardManagerActor extends Actor with ActorLogging {
-  import ShardManagerActor._
+class ShardManager extends Actor with ActorLogging
+  with CoverageShardManager {
+  import ShardManager._
 
   val indexByKey = scala.collection.mutable.Map[Long, ActorRef]()
 

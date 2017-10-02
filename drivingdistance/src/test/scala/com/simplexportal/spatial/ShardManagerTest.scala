@@ -6,13 +6,13 @@ import akka.testkit.{ImplicitSender, TestActorRef, TestActors, TestKit}
 import akka.util.Timeout
 
 import scala.concurrent.duration._
-import com.simplexportal.spatial.ShardManagerActor._
+import com.simplexportal.spatial.ShardManager._
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import org.scalatest.{BeforeAndAfterAll, GivenWhenThen, Matchers, WordSpecLike}
 
 import scala.concurrent.Await
 
-class ShardManagerActorTest extends TestKit(ActorSystem("ShardManagerActorTest"))
+class ShardManagerTest extends TestKit(ActorSystem("ShardManagerActorTest"))
   with ImplicitSender
   with WordSpecLike
   with Matchers
@@ -31,7 +31,7 @@ class ShardManagerActorTest extends TestKit(ActorSystem("ShardManagerActorTest")
       val way2bisExpected = way2Expected.copy(tags = Map("key1"->"Values1"))
       val way3Deleted = wayTmp.copy(id=3)
 
-      val shardManager = TestActorRef(ShardManagerActor.props)
+      val shardManager = TestActorRef(ShardManager.props)
 
       When("add two new ways, the second one two times")
       shardManager ! Put(way1Expected)
