@@ -46,7 +46,10 @@ lazy val model = Project( id="model", base = file("model")).
   settings(commonSettings: _*).
   settings(
     name := "model",
-    description := "Model that represent the network"
+    description := "Model that represent the network",
+    libraryDependencies ++= Seq(
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.5"
+    )
   )
 
 lazy val drivingdistance = Project(id = "drivingdistance", base = file("drivingdistance")).
@@ -57,7 +60,10 @@ lazy val drivingdistance = Project(id = "drivingdistance", base = file("drivingd
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % "1.1.7",
       "com.typesafe.akka" %% "akka-actor" % "2.5.4",
-      "com.typesafe.akka" %% "akka-testkit" % "2.5.4"
+      "com.vividsolutions" % "jts" % "1.13",
+      "org.typelevel" %% "cats-core" % "1.0.0-MF",
+      "com.github.pathikrit" %% "better-files" % "2.17.1" % "test",
+      "com.typesafe.akka" %% "akka-testkit" % "2.5.4" % "test"
     )
   ).dependsOn(model)
 
@@ -68,7 +74,7 @@ lazy val loader = Project(id = "loader", base = file("loader")).
     description := "Read osm blocks an generate the network.",
     libraryDependencies ++= Seq(
       "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
-      "org.apache.spark" %% "spark-core" % "2.2.0" % "provided",
-      "com.github.scopt" %% "scopt" % "3.5.0"
+      "com.github.pathikrit" %% "better-files" % "2.17.1" % "test",
+      "org.apache.spark" %% "spark-core" % "2.2.0" % "provided"
     )
   ).dependsOn(model)

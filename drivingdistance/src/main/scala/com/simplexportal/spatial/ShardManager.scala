@@ -43,6 +43,12 @@ object ShardManager {
   case class Put(way:Way)
 
   /**
+    * Message used to add a list of new Ways to the shard
+    * @param ways
+    */
+  case class PutBulk(ways:Seq[Way])
+
+  /**
     * Message used to get a Way from the shard by id
     * @param wayId
     */
@@ -75,12 +81,8 @@ class ShardManager extends Actor with ActorLogging
   val indexByKey = scala.collection.mutable.Map[Long, ActorRef]()
 
   override def receive = {
-    case Put(way) => {
-      indexByKey.get(way.id) match {
-        case None => indexByKey += way.id -> context.actorOf(WayStorage.props(way), s"way_${way.id}")
-        case Some(actorRef) => actorRef ! WayStorage.Update(way)
-      }
-    }
+    case PutBulk(ways) => ways.foreach(put)
+    case Put(way) => put(way)
     case Get(wayId) => {
       indexByKey.get(wayId) match {
         case None => ???
@@ -99,6 +101,20 @@ class ShardManager extends Actor with ActorLogging
     case GetMetrics => {
       log.debug("Sending metrics to {}", sender)
       sender ! Metrics(indexByKey.size)
+    }
+  }
+
+  /**
+    * Add or replace the way.
+    *
+    * @param way
+    * @return
+    */
+  private def put(way:Way) = {
+    log.debug("Putting [{}]", way.id)
+    indexByKey.get(way.id) match {
+      case None => indexByKey += way.id -> context.actorOf(WayStorage.props(way), s"way_${way.id}")
+      case Some(actorRef) => actorRef ! WayStorage.Update(way)
     }
   }
 }

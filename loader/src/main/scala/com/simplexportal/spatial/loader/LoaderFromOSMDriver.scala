@@ -193,12 +193,9 @@ object LoaderFromOSMDriver {
       generateNetwork(sc, output).saveAsTextFile(output)
     } finally {
       sc.stop()
-
     }
 
   }
-
-
 
   def main(args: Array[String]): Unit = {
     // TODO: Implement after implement the AKKA interfaces

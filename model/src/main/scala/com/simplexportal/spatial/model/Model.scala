@@ -1,5 +1,7 @@
 package com.simplexportal.spatial.model
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+
 // TODO: Store point as offsets to save space.
 // TODO: Extract all tags a create a Lookup to save space.
 
@@ -29,4 +31,4 @@ case class Node(id:Long, coords: Location , tags: Map[String, String])
   * @param tags OSM tags
   * @param intersections Intersections represented the relation between every intersection node in the way with other ways Map[ nodeId, Seq[wayId] ]
   */
-case class Way(id:Long, nodes: Seq[Node], tags: Map[String, String], intersections: Map[Long, Seq[Long]])
+case class Way(id:Long, nodes: Seq[Node], tags: Map[String, String], @JsonDeserialize(keyAs = classOf[java.lang.Long]) intersections: Map[Long, Seq[Long]]) // FIXME: intersection must be a Set a nd not a Seq.

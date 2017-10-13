@@ -25,6 +25,13 @@
 
 package com.simplexportal.spatial.loader
 
+import java.io.FileOutputStream
+
+import better.files._
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.io.Output
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{GivenWhenThen, WordSpec}
@@ -63,7 +70,7 @@ class LoaderFromOSMDriverTest extends WordSpec with GivenWhenThen {
       try {
         val network = LoaderFromOSMDriver.generateNetwork(sc, input).collect()
 
-        Then("the result must contain 13308 lines")
+        Then("the result must contain 13308 ways")
         assert(network.size == 13303)
 
         And("each way must be unique")
@@ -89,8 +96,74 @@ class LoaderFromOSMDriverTest extends WordSpec with GivenWhenThen {
         sc.stop()
       }
 
+    }
+
+    "generate the network and serialize to json" in {
+
+      Given("a set of 23 blob files")
+      val conf = new SparkConf().setMaster("local[4]").setAppName("PocDrivingDistance Loader Export JSON")
+      conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      val sc = new SparkContext(conf)
+      val input = "assets/osm/faroe-islands"
+      val outFolder = s"/tmp/poc-drivingdistance/loader-json/${System.currentTimeMillis()}/"
+
+      When("generate the Network")
+      try {
+        LoaderFromOSMDriver.generateNetwork(sc, input)
+          .mapPartitions(ways=> {
+            val mapper = new ObjectMapper()
+            mapper.registerModule(DefaultScalaModule)
+            ways.map(mapper.writeValueAsString)
+          })
+          .saveAsTextFile(outFolder)
+
+        Then("the result must contain 13308 ways")
+        val lines:Int = File(outFolder)
+          .children
+          .filter(file => file.name != "_SUCCESS" && file.extension.getOrElse("") != ".crc" )
+          .map(file=>file.lines.size)
+          .reduce(_+_)
+        assert(lines == 13303)
+
+      } finally {
+        sc.stop()
+      }
 
     }
+
+    "generate the network and serialize to kryo" in {
+
+      Given("a set of 23 blob files")
+      val conf = new SparkConf().setMaster("local[4]").setAppName("PocDrivingDistance Loader Export Kryo")
+      conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      val sc = new SparkContext(conf)
+      val input = "assets/osm/faroe-islands"
+      val outFolder = s"/tmp/poc-drivingdistance/loader-kryo/${System.currentTimeMillis()}/"
+      File(outFolder).createDirectories()
+
+      When("generate the Network")
+      try {
+        LoaderFromOSMDriver.generateNetwork(sc, input)
+          .foreachPartition(ways => {
+            val kryo = new Kryo()
+            ways.foreach(way => {
+              val fileOut = new FileOutputStream(outFolder + s"/${way.id}.way")
+              val os = new Output(fileOut)
+              kryo.writeObject(os, way)
+              os.close()
+              fileOut.close()
+            })
+          })
+
+        Then("the result must contain 13308 ways")
+        assert(File(outFolder).children.size == 13303)
+
+      } finally {
+        sc.stop()
+      }
+
+    }
+
   }
 
 }

@@ -28,7 +28,6 @@ package com.simplexportal.spatial.drivingdistance
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.simplexportal.spatial.drivingdistance.AreaDriving.Calculate
-import com.simplexportal.spatial.drivingdistance.Weights
 
 import scala.concurrent.duration._
 import akka.testkit.TestProbe

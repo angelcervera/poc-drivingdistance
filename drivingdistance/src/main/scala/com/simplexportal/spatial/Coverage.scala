@@ -28,6 +28,7 @@ package com.simplexportal.spatial
 import akka.actor.ActorRef
 import com.simplexportal.spatial.Coverage.{IntersectionFound, WayDone}
 import com.simplexportal.spatial.model.Node
+import com.vividsolutions.jts.geom.Coordinate
 
 import scala.annotation.tailrec
 
@@ -37,7 +38,7 @@ object Coverage {
   /**
     * Message to send to the [[WayStorage]] from the [[ShardManager]] to start the coverage calculus on the (way, node)
     */
-  case class Step(processId: Long, nodeId: Long, weight: Long, maxWeight: Long)
+  case class Step(processId: Long, nodeId: Long, weight: Double, maxWeight: Double)
 
   /**
     * Message to sent to the [[ShardManager]] when the calculation of a way is done.
@@ -47,7 +48,7 @@ object Coverage {
     * @param nodeId Id of the node used as start point.
     * @param nodesProcessed Nodes processed with the weight.
     */
-  case class WayDone(processId: Long, wayId:Long, nodeId: Long, nodesProcessed: Seq[(Long, Long)])
+  case class WayDone(processId: Long, wayId:Long, nodeId: Long, nodesProcessed: Seq[(Long, Double)])
 
   /**
     * Message to sent to the [[ShardManager]] when the weight of the node that is not an intersection has been calculated.
@@ -57,7 +58,7 @@ object Coverage {
     * @param nodeId
     * @param weight
     */
-  case class NodeDone(processId: Long, wayId:Long, nodeId: Long, weight: Long)
+  case class NodeDone(processId: Long, wayId:Long, nodeId: Long, weight: Double)
 
   /**
     * Message to send to the [[ShardManager]] when you found an intersection.
@@ -68,7 +69,7 @@ object Coverage {
     * @param nodeId
     * @param weight
     */
-  case class IntersectionFound(processId: Long, fromWayId: Long, toWayId:Long, nodeId: Long, weight: Long)
+  case class IntersectionFound(processId: Long, fromWayId: Long, toWayId:Long, nodeId: Long, weight: Double)
 
 //  /**
 //    * Message to calculate the coverage or Driving Distance from one point in a street.
@@ -84,7 +85,6 @@ object Coverage {
 trait CoverageShardManager {
   this: ShardManager =>
 
-
   case class Process(sender: ActorRef, nodesVisited: Map[Long, VisitedNodeInfo] )
 
   /**
@@ -93,7 +93,7 @@ trait CoverageShardManager {
     * @param minWeightFound The minimum weight found.
     * @param ways Ways used to arrive to this point.
     */
-  case class VisitedNodeInfo(minWeightFound:Long, ways: Set[Long])
+  case class VisitedNodeInfo(minWeightFound:Double, ways: Set[Long])
 
   /**
     * One actor can handle more than one coverage process.
@@ -101,20 +101,18 @@ trait CoverageShardManager {
     */
   var coverageProcesses = Map[Long, Process]()
 
-
-
 }
 
 trait CoverageWayStorage {
   this: WayStorage =>
 
 
-  def coverage(processId: Long, startNodeId: Long, startWeight: Long, maxWeight: Long) = {
+  def coverage(processId: Long, startNodeId: Long, startWeight: Double, maxWeight: Double) = {
 
-    var nodesProcessed = Seq[(Long, Long)]()
+    val nodesProcessed = Seq[(Long, Double)]()
 
     @tailrec
-    def recNextNode(currentNode: Node, nodes:Seq[Node], weight: Long, ascDirection: Boolean): Any = nodes match {
+    def recNextNode(currentNode: Node, nodes:Seq[Node], weight: Double, ascDirection: Boolean): Unit = nodes match {
       case Nil => sender ! WayDone(processId, way.id, startNodeId, nodesProcessed)
       case node :: tail => {
 
@@ -148,7 +146,7 @@ trait CoverageWayStorage {
   }
 
 
-
+  // TODO: Move from distance to time.
   /**
     * Calculate the Weight from one node to other, in the current way.
     *
@@ -161,7 +159,8 @@ trait CoverageWayStorage {
     * @param to
     * @return
     */
-  def calculateWeight(from: Node, to: Node): Long = ???
+  def calculateWeight(from: Node, to: Node): Double =
+    new Coordinate(from.coords.longitude,from.coords.latitude).distance(new Coordinate(to.coords.longitude,to.coords.latitude))
 
 }
 
