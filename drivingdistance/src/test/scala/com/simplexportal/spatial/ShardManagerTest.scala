@@ -58,14 +58,14 @@ class ShardManagerTest extends TestKit(ActorSystem("ShardManagerActorTest"))
 
     }
 
-    "work using the bulk" in {
+    "work using a big compressed data set" in {
       Given("a set of ways")
       val shardManager = TestActorRef(ShardManager.props)
       val folder = File("assets/osm/faroe-islands-json")
 
       When("adding two time the list")
-      readBulks(folder, ways => shardManager ! PutBulk(ways))
-      readBulks(folder, ways => shardManager ! PutBulk(ways))
+      executeFromXZ(folder, shardManager ! Put(_))
+      executeFromXZ(folder, shardManager ! Put(_))
 
       Then("only one time has been inserted")
       implicit val timeout = Timeout(5 seconds)

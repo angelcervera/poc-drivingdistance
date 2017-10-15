@@ -46,13 +46,10 @@ lazy val model = Project( id="model", base = file("model")).
   settings(commonSettings: _*).
   settings(
     name := "model",
-    description := "Model that represent the network",
-    libraryDependencies ++= Seq(
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.5"
-    )
+    description := "Model that represent the network"
   )
 
-lazy val drivingdistance = Project(id = "drivingdistance", base = file("drivingdistance")).
+lazy val drivingDistance = Project(id = "drivingdistance", base = file("drivingdistance")).
   settings(commonSettings: _*).
   settings(
     name := "drivingdistance",
@@ -61,8 +58,12 @@ lazy val drivingdistance = Project(id = "drivingdistance", base = file("drivingd
       "ch.qos.logback" % "logback-classic" % "1.1.7",
       "com.typesafe.akka" %% "akka-actor" % "2.5.4",
       "com.vividsolutions" % "jts" % "1.13",
-      "org.typelevel" %% "cats-core" % "1.0.0-MF",
+      "io.circe" %% "circe-core" % "0.8.0",
+      "io.circe" %% "circe-generic" % "0.8.0",
+      "io.circe" %% "circe-parser" % "0.8.0",
       "com.github.pathikrit" %% "better-files" % "2.17.1" % "test",
+      "org.apache.commons" % "commons-compress" % "1.14" % "test",
+      "org.tukaani" % "xz" % "1.6" % "test",
       "com.typesafe.akka" %% "akka-testkit" % "2.5.4" % "test"
     )
   ).dependsOn(model)
