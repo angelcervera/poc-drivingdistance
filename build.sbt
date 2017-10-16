@@ -56,7 +56,7 @@ lazy val drivingDistance = Project(id = "drivingdistance", base = file("drivingd
     description := "Driving distance",
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % "1.1.7",
-      "com.typesafe.akka" %% "akka-actor" % "2.5.4",
+      "com.typesafe.akka" %% "akka-actor" % "2.5.6",
       "com.vividsolutions" % "jts" % "1.13",
       "io.circe" %% "circe-core" % "0.8.0",
       "io.circe" %% "circe-generic" % "0.8.0",
@@ -64,7 +64,7 @@ lazy val drivingDistance = Project(id = "drivingdistance", base = file("drivingd
       "com.github.pathikrit" %% "better-files" % "2.17.1" % "test",
       "org.apache.commons" % "commons-compress" % "1.14" % "test",
       "org.tukaani" % "xz" % "1.6" % "test",
-      "com.typesafe.akka" %% "akka-testkit" % "2.5.4" % "test"
+      "com.typesafe.akka" %% "akka-testkit" % "2.5.6" % "test"
     )
   ).dependsOn(model)
 
