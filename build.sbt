@@ -27,13 +27,17 @@ import sbt.Keys._
 
 lazy val commonSettings = Seq(
 
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
+  scalacOptions := Seq("-target:jvm-1.8"),
+
   organization := "com.simplexportal.spatial.drivingdistance",
   scalaVersion := "2.11.11",
   organizationHomepage := Some(url("http://www.acervera.com")),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
 
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+    "org.scalatest" %% "scalatest" % "3.0.4" % "test",
+    "org.scalactic" %% "scalactic" % "3.0.4" % "test",
     "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
     "commons-io" % "commons-io" % "2.5" % "test"
   ),
@@ -49,6 +53,11 @@ lazy val model = Project( id="model", base = file("model")).
     description := "Model that represent the network"
   )
 
+val versions = Map(
+  "akkaHttp" -> "10.0.10",
+  "akka" -> "2.5.6"
+)
+
 lazy val drivingDistance = Project(id = "drivingdistance", base = file("drivingdistance")).
   settings(commonSettings: _*).
   settings(
@@ -56,15 +65,21 @@ lazy val drivingDistance = Project(id = "drivingdistance", base = file("drivingd
     description := "Driving distance",
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % "1.1.7",
-      "com.typesafe.akka" %% "akka-actor" % "2.5.6",
       "com.vividsolutions" % "jts" % "1.13",
-      "io.circe" %% "circe-core" % "0.8.0",
-      "io.circe" %% "circe-generic" % "0.8.0",
-      "io.circe" %% "circe-parser" % "0.8.0",
-      "com.github.pathikrit" %% "better-files" % "2.17.1" % "test",
-      "org.apache.commons" % "commons-compress" % "1.14" % "test",
-      "org.tukaani" % "xz" % "1.6" % "test",
-      "com.typesafe.akka" %% "akka-testkit" % "2.5.6" % "test"
+      "com.typesafe.akka" %% "akka-actor"           % versions("akka"),
+      "com.typesafe.akka" %% "akka-http"            % versions("akkaHttp"),
+      "com.typesafe.akka" %% "akka-http-spray-json" % versions("akkaHttp"),
+      "com.typesafe.akka" %% "akka-http-xml"        % versions("akkaHttp"),
+      "com.typesafe.akka" %% "akka-stream"          % versions("akka"),
+
+      "io.circe" %% "circe-core" % "0.8.0" % Test,
+      "io.circe" %% "circe-generic" % "0.8.0" % Test,
+      "io.circe" %% "circe-parser" % "0.8.0" % Test,
+      "com.github.pathikrit" %% "better-files" % "2.17.1" % Test,
+      "org.apache.commons" % "commons-compress" % "1.14" % Test,
+      "org.tukaani" % "xz" % "1.6" % Test,
+      "com.typesafe.akka" %% "akka-testkit" % versions("akka") % Test,
+      "com.typesafe.akka" %% "akka-stream-testkit" % versions("akka") % Test
     )
   ).dependsOn(model)
 
@@ -76,6 +91,7 @@ lazy val loader = Project(id = "loader", base = file("loader")).
     libraryDependencies ++= Seq(
       "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
       "com.github.pathikrit" %% "better-files" % "2.17.1" % "test",
-      "org.apache.spark" %% "spark-core" % "2.2.0" % "provided"
+      "org.apache.spark" %% "spark-core" % "2.2.0" % "provided",
+      "org.apache.kafka" % "kafka-clients" % "1.0.0"
     )
   ).dependsOn(model)
