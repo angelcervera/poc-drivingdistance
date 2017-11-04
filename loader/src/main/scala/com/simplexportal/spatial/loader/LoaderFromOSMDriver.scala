@@ -189,8 +189,8 @@ object LoaderFromOSMDriver {
 
     val sc = new SparkContext(conf)
     try {
-      // At the moment, store to be check that it's ok
-      generateNetwork(sc, output).saveAsTextFile(output)
+      generateNetwork(sc, output)
+        .saveAsTextFile(output) // At the moment, store to be check that it's ok
     } finally {
       sc.stop()
     }
