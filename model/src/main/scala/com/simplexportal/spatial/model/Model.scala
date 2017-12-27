@@ -33,3 +33,5 @@ case class Node(id:Long, coords: Location , tags: Map[String, String]) extends M
   */
 // FIXME: intersection must be a Set a nd not a Seq.
 case class Way(id:Long, nodes: Seq[Node], tags: Map[String, String], intersections: Map[Long, Seq[Long]]) extends Model
+
+

@@ -90,8 +90,20 @@ lazy val loader = Project(id = "loader", base = file("loader")).
     description := "Read osm blocks an generate the network.",
     libraryDependencies ++= Seq(
       "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
-      "com.github.pathikrit" %% "better-files" % "2.17.1" % "test",
+      "com.github.pathikrit" %% "better-files" % "2.17.1",
       "org.apache.spark" %% "spark-core" % "2.2.0" % "provided",
       "org.apache.kafka" % "kafka-clients" % "1.0.0"
     )
   ).dependsOn(model)
+
+lazy val visualize = Project(id="visualize", base = file("visualize"))
+  .settings(commonSettings: _*)
+  .settings(
+    name := "visualize",
+    description := "Read a compressed data set of ways and generate a map to visualize it.",
+    libraryDependencies ++= Seq(
+      "com.github.pathikrit" %% "better-files" % "2.17.1",
+      "org.apache.commons" % "commons-compress" % "1.14"
+    )
+  )
+  .dependsOn(model)

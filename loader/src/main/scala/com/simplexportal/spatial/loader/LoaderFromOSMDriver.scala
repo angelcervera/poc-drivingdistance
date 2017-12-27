@@ -25,14 +25,9 @@
 
 package com.simplexportal.spatial.loader
 
-import java.util.Properties
-
 import com.acervera.osm4scala.EntityIterator
 import com.acervera.osm4scala.model.{NodeEntity, OSMEntity, OSMTypes, WayEntity}
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.simplexportal.spatial.model.{Location, Node, Way}
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
 import org.openstreetmap.osmosis.osmbinary.fileformat.Blob
 import org.apache.log4j.Logger
@@ -187,53 +182,17 @@ object LoaderFromOSMDriver {
       )}
   }
 
-  /**
-    * Publish and iterable sequence of ways into Kafka.
-    *
-    */
-  def publishToKafka(ways: Iterator[Way], brokers: String, topic: String) = {
-
-    // Create Kafka connection.
-    val kafkaProps = new Properties()
-    kafkaProps.put("bootstrap.servers", brokers)
-    kafkaProps.put("client.id", "PocDrivingDistance")
-    kafkaProps.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    kafkaProps.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    kafkaProps.put("acks", "1")
-    kafkaProps.put("producer.type", "async")
-
-    // Mapper per partition
-    val mapper = new ObjectMapper()
-    mapper.registerModule(DefaultScalaModule)
-
-    val producer = new KafkaProducer[String, String](kafkaProps)
-
-    // Publish all ways.
-    try {
-      ways.foreach(way => producer.send(new ProducerRecord[String, String](topic, mapper.writeValueAsString(way))))
-    } finally {
-      producer.close()
-    }
-  }
-
-  def load(defaulConfig: SparkConf, input:String, topic:String = "PocDrivingDistance", brokers: String = "localhost:9092" ) = {
+  def load(defaulConfig: SparkConf, input:String, publisher: RDD[Way]=>Unit ) = {
 
     val conf = defaulConfig.setAppName("PocDrivingDistance Loader")
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 
     val sc = new SparkContext(conf)
     try {
-      generateNetwork(sc, input)
-          .foreachPartition(ways => publishToKafka(ways, brokers, topic))
+      publisher(generateNetwork(sc, input))
     } finally {
       sc.stop()
     }
-
-  }
-
-  def main(args: Array[String]): Unit = {
-    val Array(input, topic, brokers) = args
-    load(new SparkConf().setAppName("PocDrivingDistance Loader"), input, topic, brokers)
   }
 
 }
